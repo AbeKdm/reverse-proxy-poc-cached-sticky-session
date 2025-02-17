@@ -3,7 +3,9 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import HealthCheck from './HealthCheck';
 import { Request, Response, NextFunction } from 'express';
 import { getLogger } from './logger'; // Import getLogger directly
-
+import { LRUCacheWithExpiration } from './LRUCacheWithExpiration';
+import { getuid } from 'process';
+import { generateShortUUID } from './helper';
 
 const express = require('express');
 const app = express();
@@ -11,6 +13,8 @@ const app = express();
 const logger = getLogger('PROXY'); 
 logger.level = 'debug';
 
+const healthCheck = new HealthCheck();
+let lastServerIndex = 0;
 
 let TARGET_SERVERS: string[] = [
     "http://localhost:5041",
@@ -20,8 +24,8 @@ let TARGET_SERVERS: string[] = [
     "http://localhost:5045"
 ];
 
-const healthCheck = new HealthCheck();
-let lastServerIndex = 0;
+// get cache instance
+const cache = new LRUCacheWithExpiration(1000);
 
 /*const isServerHealthy = (serverUrl: string): Promise<boolean> => {
     console.log(`\n[DEBUG] Checking server health: ${serverUrl}`);
@@ -111,6 +115,10 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
                 logger.info(`[PROXY] ${req.method} ${req.originalUrl} -> ${targetServer}${req.originalUrl}`);
             },
             proxyRes: (proxyRes, req: Request) => {
+                // cache targetServer with key new guid
+                const key = generateShortUUID();
+                cache.set(key, targetServer);
+                res.setHeader('X-Session-Key', key);
                 logger.info(`[PROXY] ${req.method} ${req.originalUrl} <- ${targetServer}${req.originalUrl} (${proxyRes.statusCode})`);
             },
             error: (err, req: Request, res: Response) => {

@@ -12,7 +12,8 @@ Object.defineProperty(exports, "getLogger", { enumerable: true, get: function ()
     categories: {
         default: { appenders: ['console', 'file'], level: 'trace' },
         PROXY: { appenders: ['console', 'file'], level: 'trace' }, // Custom category for index.ts
-        HC: { appenders: ['console', 'file'], level: 'trace' } // Custom category for healthcheck.ts
+        HC: { appenders: ['console', 'file'], level: 'trace' }, // Custom category for healthcheck.ts
+        CACHE: { appenders: ['console'], level: 'trace' } // Custom category for LRUCacheWithExpiration.ts
     }
 });
 // Export the default logger

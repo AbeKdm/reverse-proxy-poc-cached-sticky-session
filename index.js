@@ -39,10 +39,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var http_proxy_middleware_1 = require("http-proxy-middleware");
 var HealthCheck_1 = require("./HealthCheck");
 var logger_1 = require("./logger"); // Import getLogger directly
+var LRUCacheWithExpiration_1 = require("./LRUCacheWithExpiration");
+var helper_1 = require("./helper");
 var express = require('express');
 var app = express();
 var logger = (0, logger_1.getLogger)('PROXY');
 logger.level = 'debug';
+var healthCheck = new HealthCheck_1.default();
+var lastServerIndex = 0;
 var TARGET_SERVERS = [
     "http://localhost:5041",
     "http://localhost:5042",
@@ -50,8 +54,8 @@ var TARGET_SERVERS = [
     "http://localhost:5044",
     "http://localhost:5045"
 ];
-var healthCheck = new HealthCheck_1.default();
-var lastServerIndex = 0;
+// get cache instance
+var cache = new LRUCacheWithExpiration_1.LRUCacheWithExpiration(1000);
 /*const isServerHealthy = (serverUrl: string): Promise<boolean> => {
     console.log(`\n[DEBUG] Checking server health: ${serverUrl}`);
     return new Promise((resolve) => {
@@ -154,6 +158,10 @@ app.use(function (req, res, next) { return __awaiter(void 0, void 0, void 0, fun
                             logger.info("[PROXY] ".concat(req.method, " ").concat(req.originalUrl, " -> ").concat(targetServer).concat(req.originalUrl));
                         },
                         proxyRes: function (proxyRes, req) {
+                            // cache targetServer with key new guid
+                            var key = (0, helper_1.generateShortUUID)();
+                            cache.set(key, targetServer);
+                            res.setHeader('X-Session-Key', key);
                             logger.info("[PROXY] ".concat(req.method, " ").concat(req.originalUrl, " <- ").concat(targetServer).concat(req.originalUrl, " (").concat(proxyRes.statusCode, ")"));
                         },
                         error: function (err, req, res) {

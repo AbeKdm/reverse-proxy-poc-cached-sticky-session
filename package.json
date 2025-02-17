@@ -12,6 +12,7 @@
   "dependencies": {
     "express": "^4.21.2",
     "http-proxy-middleware": "^3.0.3",
-    "log4js": "^6.9.1"
+    "log4js": "^6.9.1",
+    "uuid": "^11.0.5"
   }
 }
